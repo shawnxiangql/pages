@@ -1,0 +1,1501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>风险平价资产管理</title>
+<style>
+:root{
+  --bg:#f4f7fb; --card:#ffffff; --text:#1c2838; --muted:#5d6b80; --line:#e4ebf3;
+  --accent:#2563eb; --up:#dc2626; --down:#059669; --warn:#b45309;
+  --glass:#ffffff;
+}
+*{box-sizing:border-box}
+body{font-family:"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif; margin:0; background:var(--bg); color:var(--text); min-height:100vh; color-scheme:light;}
+.container{width:100%;margin:0 auto;padding:28px clamp(20px, 3vw, 40px) 48px;}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7c3aed);display:flex;align-items:center;justify-content:center;font-weight:700;color:white;flex:none}
+h1{font-size:18px;margin:0}
+.subtitle{color:var(--muted);font-size:13px;margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.tabs{display:flex;gap:4px;padding:4px;margin-bottom:16px;background:#e7eef6;border-radius:12px;overflow-x:auto}
+.tab{flex:1;min-width:max-content;border:0;background:transparent;color:var(--muted);padding:10px 12px;border-radius:9px;cursor:pointer;font-weight:600;font-size:14px}
+.tab.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(28,40,56,.08)}
+.tab .count{display:inline-block;min-width:18px;margin-left:6px;padding:0 6px;border-radius:99px;background:#fef3c7;color:var(--warn);font-size:12px}
+.tab .count[hidden]{display:none}
+.panel[hidden]{display:none}
+.card{background:var(--card);border-radius:14px;padding:18px 18px 16px;border:1px solid var(--line);box-shadow:0 1px 2px rgba(28,40,56,.04)}
+.lead{color:var(--muted);font-size:13px;line-height:1.55;margin:0 0 14px}
+.section-title{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 8px}
+.section-title strong{font-size:14px}
+.small{font-size:13px;color:var(--muted)}
+.table-wrap{overflow-x:auto}
+.table{width:100%;border-collapse:collapse}
+.table th{font-weight:600;text-align:left;padding:8px 8px 8px 0;color:var(--muted);font-size:12px;white-space:nowrap}
+.table td{padding:10px 8px 10px 0;border-top:1px solid var(--line);font-size:14px;vertical-align:middle}
+.input,.select,.num{background:var(--glass);border:1px solid #d5deea;padding:8px 10px;border-radius:8px;color:var(--text);width:100%}
+.input:focus,.select:focus,.num:focus{outline:2px solid rgba(37,99,235,.35);border-color:transparent}
+.input::placeholder,.num::placeholder{color:#93a0b3}
+.target-input{max-width:88px}
+.btn{background:linear-gradient(90deg,var(--accent),#7c3aed);border:none;color:white;padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn.ghost{background:#fff;border:1px solid #d5deea;color:var(--text)}
+.btn.small{padding:6px 10px;font-size:13px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:4px 0 16px}
+.kpi .item{padding:12px 8px;border-radius:12px;background:#f3f6fb;text-align:center}
+.kpi .label{font-size:12px;color:var(--muted)}
+.kpi .value{font-size:18px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:4px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.holding-form{display:flex;flex-wrap:wrap;gap:8px;align-items:end}
+.holding-form .field{flex:1 1 120px;min-width:0}
+.holding-form > .btn{flex:none}
+.tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:99px;font-size:11px;font-weight:600;vertical-align:1px}
+.tag.in{background:#dbeafe;color:#1d4ed8}
+.tag.out{background:#eef2f7;color:var(--muted)}
+.lot-row td{background:#f8fafc}
+.cash-form{display:grid;grid-template-columns:1fr 180px auto;gap:8px;align-items:end}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.footer{margin-top:18px;color:var(--muted);font-size:12px;text-align:center;line-height:1.6}
+.small-muted{font-size:12px;color:var(--muted);line-height:1.45}
+.small-link{color:var(--accent);font-size:12px}
+.mono{font-variant-numeric:tabular-nums;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.up{color:var(--up)}
+.down{color:var(--down)}
+.pnl-pct{font-size:12px;margin-top:2px}
+.flat{color:var(--muted)}
+.warn{color:var(--warn)}
+.ok{color:#1d4ed8}
+.err{color:var(--up);font-size:12px;margin-top:4px}
+.sym-line{display:flex;gap:8px;align-items:center;margin-top:4px}
+.quote-tools{display:flex;gap:8px;align-items:center;flex:none}
+.track{position:relative;height:8px;border-radius:99px;background:#e6edf5}
+.fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--accent),#7c3aed)}
+.mark{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1c2838;border-radius:2px}
+.rb-item{padding:12px 0;border-top:1px solid var(--line)}
+.rb-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#fff;border:1px solid var(--line);color:var(--text);padding:10px 14px;border-radius:10px;z-index:20;max-width:min(560px,92vw);box-shadow:0 10px 30px rgba(28,40,56,.12)}
+.toast.bad{border-color:rgba(220,38,38,.45)}
+@media(max-width:720px){
+  .cash-form{grid-template-columns:1fr 1fr}
+  .header{flex-direction:column;align-items:flex-start}
+  .container{padding:16px 16px 40px}
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="brand">
+      <div class="logo">投资</div>
+      <div>
+        <h1>投资管理工具</h1>
+        <div class="subtitle">管理资产配置、持仓管理和再平衡</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn ghost" id="importBtn">导入数据</button>
+      <button type="button" class="btn ghost" id="exportBtn">导出数据</button>
+    </div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button type="button" class="tab on" data-tab="setup">初始配比</button>
+    <button type="button" class="tab" data-tab="status">持仓管理</button>
+    <button type="button" class="tab" data-tab="rebalance">再平衡 <span class="count" id="tabAlert" hidden>0</span></button>
+    <button type="button" class="tab" data-tab="cash">新投入</button>
+  </div>
+
+  <section class="panel" data-panel="setup">
+    <div class="card">
+      <p class="lead">填写代码和目标比例后添加。名称和价格从行情取得，列表里只能改目标比例。</p>
+      <div class="holding-form">
+        <div class="field">
+          <label for="assetSymbol">代码</label>
+          <input id="assetSymbol" class="input mono" placeholder="510300" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="assetTarget">目标 %</label>
+          <input id="assetTarget" class="num" inputmode="decimal" placeholder="20" />
+        </div>
+        <button type="button" class="btn" id="addAssetBtn">添加</button>
+      </div>
+      <div class="table-wrap" style="margin-top:14px">
+        <table class="table">
+          <thead>
+            <tr><th>名称</th><th>代码</th><th>价格</th><th>目标 %</th><th>风险贡献</th><th></th></tr>
+          </thead>
+          <tbody id="assetsBody"></tbody>
+        </table>
+      </div>
+      <div id="weightSum" class="small" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="status" hidden>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px">
+        <p class="lead" style="margin:0">对照收盘价看市值、盈亏和当前权重。价格来自腾讯财经，15:00 后为当日收盘价。</p>
+        <div class="quote-tools">
+          <label class="small" for="volWindow">波动窗口</label>
+          <select id="volWindow" class="select" style="width:auto">
+            <option value="20">近 20 日</option>
+            <option value="63">近 3 个月</option>
+            <option value="252">近 1 年</option>
+          </select>
+          <button type="button" class="btn" id="refreshPrices">更新收盘价</button>
+        </div>
+      </div>
+      <div id="fetchStatus" class="small-muted" style="margin:-4px 0 12px">尚未拉取行情。点「更新收盘价」后显示价格。</div>
+      <div class="kpi">
+        <div class="item"><div class="label">组合内</div><div class="value" id="insideValue">¥0.00</div><div class="small-muted" id="insidePnl">盈亏 —</div></div>
+        <div class="item"><div class="label">组合外</div><div class="value" id="outsideValue">¥0.00</div><div class="small-muted" id="outsidePnl">盈亏 —</div></div>
+        <div class="item"><div class="label">合计</div><div class="value" id="totalValue">¥0.00</div><div class="small-muted" id="pnlValue">盈亏 —</div></div>
+        <div class="item"><div class="label">组合波动</div><div class="value" id="portfolioVol">—</div><div class="small-muted" id="portfolioVolNote">更新收盘价后计算</div></div>
+        <div class="item"><div class="label">偏离项</div><div class="value" id="alertCount">0</div><div class="small-muted">只看组合内</div></div>
+      </div>
+      <div class="section-title">
+        <strong>持仓</strong>
+      </div>
+      <p class="small-muted" id="holdingsEmpty" style="margin:0 0 10px">还没有持仓。选择初始配比里的资产，或选「其他」后填写代码。组合外计入上面的合计和表里的当前占比，不改变偏离、再平衡和新投入。</p>
+      <div class="holding-form">
+        <div class="field">
+          <label for="holdAsset">资产</label>
+          <select id="holdAsset" class="select"></select>
+        </div>
+        <div class="field" id="holdSymbolField" hidden>
+          <label for="holdSymbol">代码</label>
+          <input id="holdSymbol" class="input mono" placeholder="601288" spellcheck="false" />
+        </div>
+        <div class="field">
+          <label for="holdQty">数量</label>
+          <input id="holdQty" class="num" inputmode="decimal" placeholder="100" />
+        </div>
+        <div class="field">
+          <label for="holdPrice">成本价</label>
+          <input id="holdPrice" class="num" inputmode="decimal" placeholder="4.50" />
+        </div>
+        <div class="field">
+          <label for="holdDate">日期</label>
+          <input id="holdDate" class="input" type="date" />
+        </div>
+        <button type="button" class="btn" id="addHoldingBtn">添加</button>
+      </div>
+      <div id="positionBox" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="rebalance" hidden>
+    <div class="card">
+      <p class="lead">用现有持仓向目标权重靠拢。建议金额按归一后的目标计算，买卖互相抵消。A 股整手按 100 份估算。</p>
+      <div class="actions" style="margin-top:0">
+        <label class="small" for="threshold">偏离超过</label>
+        <input id="threshold" class="num" inputmode="decimal" value="5" style="width:72px" />
+        <span class="small">个百分点时标出</span>
+      </div>
+      <div id="rebalanceBox" style="margin-top:8px" class="small-muted">录入持仓和价格后，这里给出建议。</div>
+    </div>
+  </section>
+
+  <section class="panel" data-panel="cash" hidden>
+    <div class="card">
+      <p class="lead">新钱默认先补低于目标的资产。还没有持仓时，按目标权重分配。</p>
+      <div class="cash-form">
+        <div class="field">
+          <label for="newAmount">新投入金额</label>
+          <input id="newAmount" class="input" inputmode="decimal" placeholder="例如 10000" />
+        </div>
+        <div class="field">
+          <label for="allocMode">方式</label>
+          <select id="allocMode" class="select">
+            <option value="gap">优先补齐低配</option>
+            <option value="prop">按目标权重比例</option>
+          </select>
+        </div>
+        <button type="button" class="btn" id="allocBtn">计算分配</button>
+      </div>
+      <div id="allocResult" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+</div>
+<div id="toast" class="toast" hidden role="status"></div>
+
+<script>
+const STORAGE_KEY = 'rp_alloc_v2';
+const LEGACY_KEY = 'rp_grid_v1';
+const KLINE_URL = 'https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=';
+let state = defaultState();
+let saveTimer = 0;
+let toastTimer = 0;
+let refreshing = false;
+
+function defaultState(){
+  return {
+    version: 2,
+    assets: [
+      blankAsset({ name:'沪深300ETF', symbol:'510300', target:40 }),
+      blankAsset({ name:'黄金ETF', symbol:'518880', target:20 }),
+      blankAsset({ name:'国债ETF', symbol:'511010', target:40 })
+    ],
+    holdings: [],
+    outside: [],
+    settings: { threshold:5, volWindowDays:63, lastFetch:'' }
+  };
+}
+function blankAsset(partial){
+  return Object.assign({
+    id:idGen(), name:'', symbol:'', market:'auto', price:null, target:0,
+    vol:null, volN:0, changePct:null, priceTime:'', quoteName:'', priceError:'', histWarn:'', closes:[]
+  }, partial || {});
+}
+function idGen(){ return 'id_' + Math.random().toString(36).slice(2,9); }
+function pad(n){ return String(n).padStart(2,'0'); }
+function todayStr(){
+  const d = new Date();
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
+}
+function num(v){
+  if(typeof v === 'number') return Number.isFinite(v) ? v : null;
+  const n = parseFloat(String(v == null ? '' : v).replace(/,/g,'').trim());
+  return Number.isFinite(n) ? n : null;
+}
+function esc(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function money(n){
+  if(!Number.isFinite(n)) return '—';
+  return n.toLocaleString('zh-CN', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+function sigPrice(n){
+  if(!Number.isFinite(n) || n === 0) return n;
+  const rounded = Number(n.toPrecision(3));
+  return Number.isFinite(rounded) ? rounded : n;
+}
+function pxText(n){
+  if(!Number.isFinite(n)) return '—';
+  const rounded = sigPrice(n);
+  if(rounded === 0) return '0';
+  let text = rounded.toPrecision(3);
+  if(/e/i.test(text)) return String(rounded);
+  if(Math.abs(rounded) < 1 && text.includes('.')) text = text.replace(/0+$/, '').replace(/\.$/, '');
+  return text;
+}
+function signedMoney(n){
+  if(!Number.isFinite(n)) return '—';
+  const sign = n > 0 ? '+' : n < 0 ? '-' : '';
+  return sign + '¥' + money(Math.abs(n));
+}
+function pnlHtml(pnl, costAmt){
+  if(pnl == null) return '—';
+  let html = signedMoney(pnl);
+  if(costAmt > 0){
+    const pct = pnl / costAmt * 100;
+    const sign = pct > 0 ? '+' : '';
+    html += '<div class="pnl-pct">'+sign+pct.toFixed(2)+'%</div>';
+  }
+  return html;
+}
+function sampleStd(arr){
+  if(!arr || arr.length < 2) return null;
+  const mean = arr.reduce((s,x)=>s+x,0) / arr.length;
+  const v = arr.reduce((s,x)=>s + (x-mean) ** 2, 0) / (arr.length - 1);
+  return Math.sqrt(Math.max(v, 0));
+}
+function toast(msg, kind){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast' + (kind === 'bad' ? ' bad' : '');
+  el.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>{ el.hidden = true; }, 4600);
+}
+
+function toQqSymbol(asset){
+  let raw = String(asset.symbol || '').trim().toLowerCase().replace(/\s/g,'');
+  const legacy = { sh300:'510300', gold:'518880', bond:'511010' };
+  if(legacy[raw]) raw = legacy[raw];
+  const prefixed = raw.match(/^(sh|sz|bj|hk)(\d+)$/);
+  if(prefixed){
+    const code = prefixed[1] === 'hk' ? prefixed[2].padStart(5,'0').slice(-5) : prefixed[2].padStart(6,'0').slice(-6);
+    return prefixed[1] + code;
+  }
+  const digits = raw.replace(/\D/g,'');
+  if(!digits) return '';
+  if(digits.length === 5) return 'hk' + digits.padStart(5,'0').slice(-5);
+  const code = digits.padStart(6,'0').slice(-6);
+  if(/^(6|5)/.test(code) || /^900/.test(code)) return 'sh' + code;
+  if(/^(4|8)/.test(code) || /^92/.test(code)) return 'bj' + code;
+  if(/^(0|1|2|3)/.test(code)) return 'sz' + code;
+  return '';
+}
+function priceKind(t){
+  const s = String(t || '');
+  if(s.length < 12) return '收盘价';
+  const now = new Date();
+  const today = '' + now.getFullYear() + pad(now.getMonth()+1) + pad(now.getDate());
+  const hm = parseInt(s.slice(8,12), 10);
+  if(s.slice(0,8) === today && hm >= 915 && hm < 1500) return '最新价';
+  return '收盘价';
+}
+function formatQuoteTime(t){
+  const s = String(t || '');
+  if(/^\d{14}$/.test(s)) return s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8)+' '+s.slice(8,10)+':'+s.slice(10,12);
+  if(/^\d{8}$/.test(s)) return s.slice(0,4)+'-'+s.slice(4,6)+'-'+s.slice(6,8);
+  return s;
+}
+function changeHtml(pct){
+  if(!Number.isFinite(pct)) return '<span class="flat">—</span>';
+  const cls = pct > 0 ? 'up' : pct < 0 ? 'down' : 'flat';
+  const sign = pct > 0 ? '+' : '';
+  return '<span class="'+cls+'">'+sign+pct.toFixed(2)+'%</span>';
+}
+function shortQuoteTime(t){
+  const s = String(t || '');
+  if(/^\d{14}$/.test(s)) return s.slice(4,6)+'-'+s.slice(6,8)+' '+s.slice(8,10)+':'+s.slice(10,12);
+  return formatQuoteTime(t);
+}
+
+function normalizeAsset(a){
+  a = a || {};
+  let symbol = String(a.symbol || '');
+  const legacy = { SH300:'510300', GOLD:'518880', BOND:'511010', sh300:'510300', gold:'518880', bond:'511010' };
+  if(legacy[symbol]) symbol = legacy[symbol];
+  const closes = Array.isArray(a.closes) ? a.closes.filter(x => Array.isArray(x) && x[0] && Number.isFinite(+x[1]) && +x[1] > 0).map(x => [String(x[0]), +x[1]]).slice(-500) : [];
+  const price = num(a.price);
+  return {
+    id: typeof a.id === 'string' && a.id ? a.id : idGen(),
+    name: String(a.name || ''),
+    symbol,
+    market: ['auto','sh','sz','bj','hk'].includes(a.market) ? a.market : 'auto',
+    price: price == null ? null : sigPrice(price),
+    target: num(a.target) ?? 0,
+    vol: num(a.vol),
+    volN: num(a.volN) ?? 0,
+    changePct: num(a.changePct),
+    priceTime: String(a.priceTime || ''),
+    quoteName: String(a.quoteName || ''),
+    priceError: String(a.priceError || ''),
+    histWarn: String(a.histWarn || ''),
+    closes
+  };
+}
+function normalizeHolding(h, assetIds){
+  if(!h || !assetIds.has(h.assetId)) return null;
+  const qty = num(h.qty);
+  const unitPrice = num(h.unitPrice);
+  if(!(qty > 0) || !(unitPrice > 0)) return null;
+  return {
+    id: typeof h.id === 'string' && h.id ? h.id : idGen(),
+    assetId: h.assetId,
+    qty, unitPrice: sigPrice(unitPrice),
+    date: String(h.date || todayStr()),
+    note: String(h.note || '')
+  };
+}
+function normalizeLot(lot){
+  if(!lot || typeof lot !== 'object') return null;
+  const qty = num(lot.qty);
+  const unitPrice = num(lot.unitPrice);
+  if(!(qty > 0) || !(unitPrice > 0)) return null;
+  return {
+    id: typeof lot.id === 'string' && lot.id ? lot.id : idGen(),
+    qty,
+    unitPrice: sigPrice(unitPrice),
+    date: String(lot.date || '')
+  };
+}
+function lotCostSum(lots){
+  return (lots || []).reduce((s, lot) => s + lot.qty * lot.unitPrice, 0);
+}
+function blendCost(lots){
+  const qty = (lots || []).reduce((s, lot) => s + lot.qty, 0);
+  if(!(qty > 0)) return null;
+  return sigPrice(lotCostSum(lots) / qty);
+}
+function syncOutsideRow(row){
+  const lots = row.lots || [];
+  row.qty = lots.reduce((s, lot) => s + lot.qty, 0);
+  const cost = blendCost(lots);
+  if(cost != null) row.cost = cost;
+}
+function normalizeOutside(row){
+  if(!row || typeof row !== 'object') return null;
+  const symbol = String(row.symbol || '').trim();
+  if(!symbol) return null;
+  let lots = Array.isArray(row.lots) ? row.lots.map(normalizeLot).filter(Boolean) : [];
+  if(!lots.length){
+    const qty = num(row.qty);
+    const cost = num(row.cost);
+    if(!(qty > 0) || !(cost > 0)) return null;
+    lots = [{ id:idGen(), qty, unitPrice:sigPrice(cost), date:'' }];
+  }
+  const seenLot = new Set();
+  lots.forEach(lot => { if(seenLot.has(lot.id)) lot.id = idGen(); seenLot.add(lot.id); });
+  const qty = lots.reduce((s, lot) => s + lot.qty, 0);
+  const cost = blendCost(lots);
+  if(!(qty > 0) || !(cost > 0)) return null;
+  const price = num(row.price);
+  return {
+    id: typeof row.id === 'string' && row.id ? row.id : idGen(),
+    symbol,
+    market: ['auto','sh','sz','bj','hk'].includes(row.market) ? row.market : 'auto',
+    qty,
+    cost,
+    name: String(row.name || ''),
+    price: price != null && price > 0 ? sigPrice(price) : null,
+    priceError: String(row.priceError || ''),
+    changePct: num(row.changePct),
+    vol: num(row.vol),
+    volN: num(row.volN) ?? 0,
+    priceTime: String(row.priceTime || ''),
+    histWarn: String(row.histWarn || ''),
+    closes: Array.isArray(row.closes) ? row.closes.filter(x => Array.isArray(x) && x[0] && Number.isFinite(+x[1]) && +x[1] > 0).map(x => [String(x[0]), +x[1]]).slice(-500) : [],
+    lots
+  };
+}
+function normalizeState(raw){
+  const base = defaultState();
+  const assets = Array.isArray(raw.assets) && raw.assets.length ? raw.assets.map(normalizeAsset) : base.assets;
+  const seen = new Set();
+  assets.forEach(a => { if(seen.has(a.id)) a.id = idGen(); seen.add(a.id); });
+  const ids = new Set(assets.map(a => a.id));
+  const holdings = Array.isArray(raw.holdings) ? raw.holdings.map(h => normalizeHolding(h, ids)).filter(Boolean) : [];
+  const outside = Array.isArray(raw.outside) ? raw.outside.map(normalizeOutside).filter(Boolean) : [];
+  const seenOutside = new Set();
+  outside.forEach(row => { if(seenOutside.has(row.id)) row.id = idGen(); seenOutside.add(row.id); });
+  const settings = Object.assign(base.settings, raw.settings || {});
+  settings.threshold = num(settings.threshold) ?? 5;
+  settings.volWindowDays = [20,63,252].includes(+settings.volWindowDays) ? +settings.volWindowDays : 63;
+  delete settings.priceApi;
+  return { version:2, assets, holdings, outside, settings };
+}
+function loadState(){
+  try{
+    let raw = localStorage.getItem(STORAGE_KEY);
+    let migrated = false;
+    if(!raw){
+      raw = localStorage.getItem(LEGACY_KEY);
+      migrated = !!raw;
+    }
+    if(!raw) return;
+    state = normalizeState(JSON.parse(raw));
+    if(migrated){
+      localStorage.removeItem(LEGACY_KEY);
+      saveState();
+    }
+  }catch(err){
+    console.warn(err);
+    toast('本地配置读取失败，已使用示例', 'bad');
+  }
+}
+function roundStoredPrices(){
+  state.assets.forEach(a => {
+    if(Number.isFinite(a.price)) a.price = sigPrice(a.price);
+  });
+  state.holdings.forEach(h => {
+    if(Number.isFinite(h.unitPrice)) h.unitPrice = sigPrice(h.unitPrice);
+  });
+  outsideRows().forEach(row => {
+    if(Number.isFinite(row.price) && row.price > 0) row.price = sigPrice(row.price);
+    (row.lots || []).forEach(lot => {
+      if(Number.isFinite(lot.unitPrice)) lot.unitPrice = sigPrice(lot.unitPrice);
+    });
+    if(row.lots && row.lots.length) syncOutsideRow(row);
+    else if(Number.isFinite(row.cost)) row.cost = sigPrice(row.cost);
+  });
+}
+function saveState(){
+  state.assets.forEach(a => { delete a.grid; });
+  roundStoredPrices();
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(err){
+    toast('无法写入本地存储', 'bad');
+  }
+}
+function saveSoon(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 280);
+}
+
+function annualVol(closes, windowDays){
+  const px = (closes || []).map(r => +r[1]).filter(n => n > 0);
+  if(px.length < 11) return null;
+  const rets = [];
+  for(let i=1;i<px.length;i++) rets.push(Math.log(px[i] / px[i-1]));
+  const slice = rets.slice(-windowDays);
+  if(slice.length < 10) return null;
+  const sd = sampleStd(slice);
+  if(sd == null) return null;
+  return { vol: sd * Math.sqrt(252), n: slice.length };
+}
+function alignedReturns(assets, windowDays){
+  if(!assets.length) return null;
+  const maps = assets.map(a => {
+    const m = new Map();
+    (a.closes || []).forEach(row => { if(row[0] && +row[1] > 0) m.set(row[0], +row[1]); });
+    return m;
+  });
+  if(maps.some(m => m.size < 12)) return null;
+  let dates = [...maps[0].keys()];
+  maps.slice(1).forEach(m => { dates = dates.filter(d => m.has(d)); });
+  dates.sort();
+  if(dates.length < 12) return null;
+  const series = assets.map(() => []);
+  for(let i=1;i<dates.length;i++){
+    assets.forEach((_,k) => {
+      series[k].push(maps[k].get(dates[i]) / maps[k].get(dates[i-1]) - 1);
+    });
+  }
+  const start = Math.max(0, series[0].length - windowDays);
+  if(series[0].length - start < 10) return null;
+  return { series: series.map(r => r.slice(start)), n: series[0].length - start };
+}
+function covariance(series){
+  const n = series.length;
+  const T = series[0].length;
+  const means = series.map(r => r.reduce((s,x)=>s+x,0) / T);
+  const cov = Array.from({length:n}, () => Array(n).fill(0));
+  for(let i=0;i<n;i++){
+    for(let j=i;j<n;j++){
+      let s = 0;
+      for(let t=0;t<T;t++) s += (series[i][t]-means[i]) * (series[j][t]-means[j]);
+      const v = s / (T - 1);
+      cov[i][j] = cov[j][i] = v;
+    }
+  }
+  return cov;
+}
+function riskContrib(weights, cov){
+  const Sw = cov.map(row => row.reduce((s,c,j)=>s + c*weights[j], 0));
+  const pv = weights.reduce((s,w,i)=>s + w*Sw[i], 0);
+  if(!(pv > 0)) return weights.map(() => 0);
+  return weights.map((w,i) => w * Sw[i] / pv);
+}
+function portfolioVol(aligned, weights){
+  const wsum = weights.reduce((s,w)=>s+(w||0),0);
+  if(!(wsum > 0)) return null;
+  const wn = weights.map(w => (w||0) / wsum);
+  const rets = aligned.series[0].map((_,t) => wn.reduce((s,w,i)=>s + w*aligned.series[i][t], 0));
+  const sd = sampleStd(rets);
+  return sd == null ? null : sd * Math.sqrt(252);
+}
+
+function derive(){
+  const threshold = num(document.getElementById('threshold').value);
+  const th = threshold == null ? (state.settings.threshold || 5) : threshold;
+  const stated = state.assets.reduce((s,a)=>s + (a.target || 0), 0);
+  const rows = state.assets.map(a => {
+    const lots = state.holdings.filter(h => h.assetId === a.id);
+    const qty = lots.reduce((s,h)=>s + h.qty, 0);
+    const cost = lots.reduce((s,h)=>s + h.qty * h.unitPrice, 0);
+    const price = Number.isFinite(a.price) ? a.price : null;
+    const value = price == null ? 0 : price * qty;
+    return { id:a.id, name:a.name || '未命名', symbol:a.symbol, qty, cost, price, value, target:a.target || 0 };
+  });
+  const total = rows.reduce((s,r)=>s+r.value, 0);
+  const totalCost = rows.reduce((s,r)=>s+r.cost, 0);
+  rows.forEach(r => {
+    r.cur = total > 0 ? r.value / total * 100 : 0;
+    r.tgt = stated > 0 ? r.target / stated * 100 : 0;
+    r.diff = r.cur - r.tgt;
+    r.need = total > 0 && stated > 0 ? (r.tgt/100) * total - r.value : 0;
+    r.alert = total > 0 && stated > 0 && Math.abs(r.diff) > th;
+  });
+  const aligned = alignedReturns(state.assets, state.settings.volWindowDays);
+  let portVol = null;
+  let risk = null;
+  if(aligned){
+    const useTarget = !(total > 0);
+    const weights = state.assets.map((a,i) => useTarget ? (stated > 0 ? rows[i].target / stated : 0) : (total > 0 ? rows[i].value / total : 0));
+    portVol = portfolioVol(aligned, weights);
+    const cov = covariance(aligned.series);
+    const tw = state.assets.map(a => stated > 0 ? (a.target || 0) / stated : 0);
+    if(tw.some(w => w > 0)){
+      const rc = riskContrib(tw, cov);
+      risk = state.assets.map((a,i) => ({ name:a.name || a.symbol || '未命名', rc: rc[i] }));
+    }
+  }
+  return {
+    rows, total, totalCost, pnl: total - totalCost, stated, threshold: th,
+    portVol, risk, alignedN: aligned ? aligned.n : 0,
+    volBasis: total > 0 ? '当前市值权重' : '目标权重'
+  };
+}
+
+function riskText(rc){
+  return Number.isFinite(rc) ? (rc * 100).toFixed(1) + '%' : '—';
+}
+function renderAssets(){
+  const risk = derive().risk;
+  const body = document.getElementById('assetsBody');
+  body.innerHTML = state.assets.map((a,i) => assetRowHtml(a, risk && risk[i] && Number.isFinite(risk[i].rc) ? risk[i].rc : null)).join('');
+  updateWeightSum();
+  document.getElementById('volWindow').value = String(state.settings.volWindowDays);
+}
+function assetRowHtml(a, rc){
+  const name = a.quoteName || a.name || '（还没有名称）';
+  const priceText = a.price > 0 ? '¥' + pxText(a.price) : '—';
+  const err = a.priceError ? '<div class="err">'+esc(a.priceError)+'</div>' : '';
+  const asking = confirmAssetId === a.id;
+  const held = state.holdings.filter(h => h.assetId === a.id).length;
+  const action = asking
+    ? '<button type="button" class="btn small" data-action="confirm-asset" data-id="'+esc(a.id)+'">确认删除</button> <button type="button" class="btn ghost small" data-action="cancel-asset">取消</button>'
+      + (held ? '<div class="small-muted">含 '+held+' 笔持仓</div>' : '')
+    : '<button type="button" class="btn ghost small" data-action="del-asset" data-id="'+esc(a.id)+'">删除</button>';
+  return '<tr>'
+    + '<td><strong>'+esc(name)+'</strong>'+err+'</td>'
+    + '<td class="mono">'+esc(a.symbol || '—')+'</td>'
+    + '<td class="mono">'+priceText+'</td>'
+    + '<td><input class="num mono target-input" data-id="'+esc(a.id)+'" data-field="target" inputmode="decimal" step="0.1" min="0" value="'+esc(String(a.target ?? 0))+'" /></td>'
+    + '<td class="mono" data-risk="'+esc(a.id)+'">'+riskText(rc)+'</td>'
+    + '<td>'+action+'</td>'
+    + '</tr>';
+}
+function refreshAssetRisk(risk){
+  if(!risk) risk = derive().risk;
+  state.assets.forEach((a,i) => {
+    const el = document.querySelector('#assetsBody [data-risk="'+CSS.escape(a.id)+'"]');
+    if(el) el.textContent = riskText(risk && risk[i] && Number.isFinite(risk[i].rc) ? risk[i].rc : null);
+  });
+}
+function updateWeightSum(){
+  const sum = state.assets.reduce((s,a)=>s+(a.target||0),0);
+  const el = document.getElementById('weightSum');
+  el.textContent = '目标权重合计 ' + sum.toFixed(2) + '%';
+  el.className = Math.abs(sum - 100) < 0.05 ? 'small ok' : 'small warn';
+}
+function syncHoldExtra(){
+  const other = document.getElementById('holdAsset').value === 'other';
+  document.getElementById('holdSymbolField').hidden = !other;
+}
+function syncHoldingSelect(){
+  const sel = document.getElementById('holdAsset');
+  const prev = sel.value;
+  sel.innerHTML = state.assets.map(a => '<option value="'+esc(a.id)+'">'+esc(a.name || '未命名')+' '+esc(a.symbol || '')+'</option>').join('')
+    + '<option value="other">其他</option>';
+  if([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  syncHoldExtra();
+}
+let openPositionKey = '';
+let confirmLotId = '';
+let confirmAssetId = '';
+function outsideRows(){
+  if(!Array.isArray(state.outside)) state.outside = [];
+  return state.outside;
+}
+function symbolKey(symbol){
+  return String(symbol || '').trim().toLowerCase().replace(/\s/g, '');
+}
+function outsideValue(row){
+  if(!row || row.priceError) return null;
+  if(!(Number.isFinite(row.price) && row.price > 0)) return null;
+  if(!(Number.isFinite(row.qty) && row.qty > 0)) return null;
+  return row.qty * row.price;
+}
+function outsideCostAmount(row){
+  if(row && Array.isArray(row.lots) && row.lots.length) return lotCostSum(row.lots);
+  if(row && Number.isFinite(row.cost) && row.cost > 0 && Number.isFinite(row.qty)) return row.qty * row.cost;
+  return null;
+}
+function outsidePnl(row){
+  const mv = outsideValue(row);
+  const cost = outsideCostAmount(row);
+  if(mv == null || cost == null) return null;
+  return mv - cost;
+}
+function outsideTotals(){
+  let mv = 0;
+  let pnl = 0;
+  let pending = 0;
+  let priced = 0;
+  outsideRows().forEach(row => {
+    const v = outsideValue(row);
+    if(v == null) pending += 1;
+    else {
+      priced += 1;
+      mv += v;
+      pnl += outsidePnl(row);
+    }
+  });
+  return { mv, pnl, pending, priced };
+}
+function positionGroups(){
+  const groups = [];
+  state.assets.forEach(a => {
+    const lots = state.holdings.filter(h => h.assetId === a.id);
+    const price = Number.isFinite(a.price) && a.price > 0 ? a.price : null;
+    groups.push({
+      key: 'in:' + a.id,
+      kind: 'in',
+      assetId: a.id,
+      name: a.name || a.quoteName || '未命名',
+      symbol: a.symbol || '',
+      quoteName: a.quoteName || '',
+      price,
+      priceError: a.priceError || '',
+      histWarn: a.histWarn || '',
+      priceTime: a.priceTime || '',
+      changePct: a.changePct,
+      vol: a.vol,
+      closes: a.closes || [],
+      target: a.target || 0,
+      qty: lots.reduce((s, h) => s + h.qty, 0),
+      cost: lots.length ? blendCost(lots) : null,
+      costAmt: lots.length ? lotCostSum(lots) : null,
+      lots: lots.slice().sort((x, y) => String(y.date).localeCompare(String(x.date)))
+    });
+  });
+  outsideRows().forEach(row => {
+    const lots = row.lots || [];
+    const price = row.priceError ? null : (Number.isFinite(row.price) && row.price > 0 ? row.price : null);
+    groups.push({
+      key: 'out:' + row.id,
+      kind: 'out',
+      outsideId: row.id,
+      name: row.name || '（还没有名称）',
+      symbol: row.symbol,
+      quoteName: '',
+      price,
+      priceError: row.priceError || '',
+      histWarn: row.histWarn || '',
+      priceTime: row.priceTime || '',
+      changePct: row.changePct,
+      vol: row.vol,
+      closes: row.closes || [],
+      target: 0,
+      qty: row.qty,
+      cost: row.cost,
+      costAmt: outsideCostAmount(row),
+      lots: lots.slice().sort((x, y) => String(y.date).localeCompare(String(x.date)))
+    });
+  });
+  return groups;
+}
+function shareTotal(groups){
+  let total = 0;
+  groups.forEach(g => {
+    if(g.price == null || !(g.qty > 0)) return;
+    total += g.price * g.qty;
+  });
+  return total;
+}
+function volText(v){
+  return Number.isFinite(v) ? (v * 100).toFixed(1) + '%' : '—';
+}
+function shownChange(g){
+  if(Number.isFinite(g.changePct)) return g.changePct;
+  const px = (g.closes || []).map(r => +r[1]).filter(n => n > 0);
+  if(px.length < 2 || !(px[px.length - 2] > 0)) return null;
+  return (px[px.length - 1] / px[px.length - 2] - 1) * 100;
+}
+function shownVol(g){
+  if(Number.isFinite(g.vol)) return g.vol;
+  const stat = annualVol(g.closes || [], state.settings.volWindowDays);
+  return stat ? stat.vol : null;
+}
+function weightHtml(g, total){
+  const target = g.kind === 'out' ? 0 : (g.target || 0);
+  const targetText = '<span class="small-muted">/ ' + target.toFixed(1) + '%</span>';
+  if(!(g.qty > 0) || g.price == null || !(total > 0)){
+    if(g.qty === 0 && g.price != null && total > 0) return '0.0% ' + targetText;
+    return '— ' + targetText;
+  }
+  const cur = g.price * g.qty / total * 100;
+  return cur.toFixed(1) + '% ' + targetText;
+}
+function rowValue(g){
+  if(g.price == null || !(g.qty > 0)) return null;
+  return g.price * g.qty;
+}
+function priceCell(g){
+  const warn = g.histWarn ? '<div class="small-muted">'+esc(g.histWarn)+'</div>' : '';
+  const err = g.priceError ? '<div class="err">'+esc(g.priceError)+'</div>' : '';
+  const priceText = g.price == null ? '—' : '¥' + pxText(g.price);
+  return '<td class="mono">'+priceText+err+warn+'</td>';
+}
+function refreshPositionFigures(){
+  const groups = positionGroups();
+  const total = shareTotal(groups);
+  groups.forEach(g => {
+    const row = document.querySelector('[data-pos-key="'+CSS.escape(g.key)+'"]');
+    if(!row) return;
+    const qtyEl = row.querySelector('[data-qty]');
+    if(qtyEl) qtyEl.textContent = Number(g.qty).toLocaleString('zh-CN');
+    const costEl = row.querySelector('[data-cost]');
+    if(costEl) costEl.textContent = g.cost == null ? '—' : '¥'+pxText(g.cost);
+    const mv = rowValue(g);
+    const mvEl = row.querySelector('[data-mv]');
+    if(mvEl) mvEl.textContent = mv == null ? '—' : '¥'+money(mv);
+    const pnl = mv == null || g.costAmt == null ? null : mv - g.costAmt;
+    const pnlEl = row.querySelector('[data-pnl]');
+    if(pnlEl){
+      pnlEl.innerHTML = pnlHtml(pnl, g.costAmt);
+      pnlEl.className = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'flat';
+    }
+    const wEl = row.querySelector('[data-weight]');
+    if(wEl) wEl.innerHTML = weightHtml(g, total);
+    const chg = row.querySelector('.chg');
+    if(chg) chg.innerHTML = changeHtml(shownChange(g));
+    const volEl = row.querySelector('[data-vol]');
+    if(volEl) volEl.textContent = volText(shownVol(g));
+  });
+}
+function renderPositions(){
+  const empty = document.getElementById('holdingsEmpty');
+  const box = document.getElementById('positionBox');
+  if(!box) return;
+  const groups = positionGroups();
+  const total = shareTotal(groups);
+  if(empty) empty.hidden = groups.length > 0;
+  if(!groups.length){
+    box.innerHTML = '';
+    return;
+  }
+  const body = groups.map(g => {
+    const mv = rowValue(g);
+    const pnl = mv == null || g.costAmt == null ? null : mv - g.costAmt;
+    const pnlCls = pnl > 0 ? 'up' : pnl < 0 ? 'down' : 'flat';
+    const tag = g.kind === 'in' ? '<span class="tag in">组合内</span>' : '<span class="tag out">组合外</span>';
+    const sub = g.symbol ? esc(g.symbol) : '';
+    const open = openPositionKey === g.key;
+    const multi = g.lots.length > 1;
+    const lot0 = g.lots[0];
+    const askingSummary = !multi && lot0 && confirmLotId === lot0.id;
+    let action = '';
+    if(multi){
+      action = '<button type="button" class="btn ghost small" data-action="toggle-lots" data-key="'+esc(g.key)+'">'+(open ? '收起' : '明细')+'</button>';
+    }else if(askingSummary){
+      action = '<button type="button" class="btn small" data-action="confirm-lot" data-key="'+esc(g.key)+'" data-id="'+esc(lot0.id)+'">确认删除</button> <button type="button" class="btn ghost small" data-action="cancel-lot">取消</button>';
+    }else if(lot0){
+      action = '<button type="button" class="btn ghost small" data-action="toggle-lots" data-key="'+esc(g.key)+'">'+(open ? '收起' : '修改')+'</button> '
+        + '<button type="button" class="btn ghost small" data-action="ask-lot" data-key="'+esc(g.key)+'" data-id="'+esc(lot0.id)+'">删除</button>';
+    }
+    let detail = '';
+    if(open && g.lots.length){
+      const rows = g.lots.map(lot => {
+        const asking = confirmLotId === lot.id;
+        const del = asking
+          ? '<button type="button" class="btn small" data-action="confirm-lot" data-key="'+esc(g.key)+'" data-id="'+esc(lot.id)+'">确认删除</button> <button type="button" class="btn ghost small" data-action="cancel-lot">取消</button>'
+          : '<button type="button" class="btn ghost small" data-action="ask-lot" data-key="'+esc(g.key)+'" data-id="'+esc(lot.id)+'">删除</button>';
+        return '<tr class="lot-row"><td><input class="num mono" data-lot-id="'+esc(lot.id)+'" data-key="'+esc(g.key)+'" data-field="qty" inputmode="decimal" value="'+esc(String(lot.qty))+'" /></td>'
+          + '<td><input class="num mono" data-lot-id="'+esc(lot.id)+'" data-key="'+esc(g.key)+'" data-field="unitPrice" inputmode="decimal" value="'+esc(pxText(lot.unitPrice))+'" /></td>'
+          + '<td><input class="input" type="date" data-lot-id="'+esc(lot.id)+'" data-key="'+esc(g.key)+'" data-field="date" value="'+esc(lot.date || '')+'" />'
+          + (lot.date ? '' : '<div class="small-muted">—</div>') + '</td>'
+          + '<td>'+del+'</td></tr>';
+      }).join('');
+      detail = '<tr class="lot-row"><td colspan="10"><div class="small-muted" style="margin-bottom:6px">这一笔的数量和成本价。改完后上面的合计会重算。</div><div class="table-wrap"><table class="table"><tr><th>数量</th><th>成本价</th><th>日期</th><th></th></tr>'+rows+'</table></div></td></tr>';
+    }
+    return '<tr data-pos-key="'+esc(g.key)+'"><td><strong>'+esc(g.name)+'</strong>'+tag+(sub ? '<div class="small-muted">'+sub+'</div>' : '')+'</td>'
+      + '<td class="mono" data-qty>'+Number(g.qty).toLocaleString('zh-CN')+'</td>'
+      + '<td class="mono" data-cost>'+(g.cost == null ? '—' : '¥'+pxText(g.cost))+'</td>'
+      + priceCell(g)
+      + '<td class="chg">'+changeHtml(shownChange(g))+'</td>'
+      + '<td class="mono" data-vol>'+volText(shownVol(g))+'</td>'
+      + '<td class="mono" data-mv>'+(mv == null ? '—' : '¥'+money(mv))+'</td>'
+      + '<td class="mono" data-weight>'+weightHtml(g, total)+'</td>'
+      + '<td class="'+pnlCls+'" data-pnl>'+pnlHtml(pnl, g.costAmt)+'</td>'
+      + '<td>'+action+'</td></tr>' + detail;
+  }).join('');
+  box.innerHTML = '<div class="table-wrap"><table class="table"><thead><tr><th>名称</th><th>总数量</th><th>成本价</th><th>收盘价</th><th>涨跌</th><th>波动</th><th>市值</th><th>当前 / 目标</th><th>盈亏</th><th></th></tr></thead><tbody>'
+    + body + '</tbody></table></div>'
+    + '<div class="small-muted" style="margin-top:8px"><span class="up">红涨</span> <span class="down">绿跌</span> · 波动率用前复权日 K · 当前百分比按全部持仓市值计算。偏离、再平衡和新投入只看组合内。</div>'
+    + '<div class="small-muted">相同代码再添加会并进这一行。多于一笔时，成本价是按数量加权的平均价，点「明细」改每一笔。</div>';
+}
+function setPnlLine(id, pnl, empty){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(empty || pnl == null){
+    el.textContent = '盈亏 —';
+    el.className = 'small-muted';
+    return;
+  }
+  el.textContent = '盈亏 ' + signedMoney(pnl);
+  el.className = 'small-muted ' + (pnl > 0 ? 'up' : pnl < 0 ? 'down' : '');
+}
+function renderOverview(){
+  const d = derive();
+  const ot = outsideTotals();
+  const insidePnl = state.holdings.length ? d.pnl : null;
+  const outsideMv = ot.priced > 0 ? ot.mv : (outsideRows().length ? null : 0);
+  const outsidePnl = ot.priced > 0 ? ot.pnl : null;
+  document.getElementById('insideValue').textContent = '¥' + money(d.total);
+  setPnlLine('insidePnl', insidePnl, !state.holdings.length);
+  document.getElementById('outsideValue').textContent = outsideMv == null ? '—' : '¥' + money(outsideMv);
+  setPnlLine('outsidePnl', outsidePnl, outsideMv == null || !ot.priced);
+  if(ot.pending){
+    const outPnlEl = document.getElementById('outsidePnl');
+    if(outPnlEl && ot.priced) outPnlEl.textContent += ' · 不含未取到价';
+    if(outPnlEl && !ot.priced) outPnlEl.textContent = '未取到价';
+  }
+  const totalMv = d.total + (ot.priced > 0 ? ot.mv : 0);
+  const totalPnl = (insidePnl || 0) + (outsidePnl || 0);
+  const any = state.holdings.length || ot.priced > 0;
+  document.getElementById('totalValue').textContent = '¥' + money(any ? totalMv : 0);
+  setPnlLine('pnlValue', any ? totalPnl : null, !any);
+  document.getElementById('portfolioVol').textContent = d.portVol == null ? '—' : (d.portVol*100).toFixed(1) + '%';
+  document.getElementById('portfolioVolNote').textContent = d.portVol == null
+    ? (state.settings.lastFetch ? '日K不足' : '待更新行情')
+    : d.alignedN + ' 日';
+  document.getElementById('alertCount').textContent = String(d.rows.filter(r => r.alert).length);
+  const tabAlert = document.getElementById('tabAlert');
+  const alertN = d.rows.filter(r => r.alert).length;
+  if(tabAlert){
+    tabAlert.hidden = alertN === 0;
+    tabAlert.textContent = String(alertN);
+  }
+  refreshAssetRisk(d.risk);
+  const status = document.getElementById('fetchStatus');
+  if(state.settings.lastFetch){
+    const times = state.assets.map(a => a.priceTime).filter(Boolean).sort();
+    const latest = times.length ? formatQuoteTime(times[times.length-1]) : '';
+    status.textContent = '已更新 ' + new Date(state.settings.lastFetch).toLocaleString()
+      + (latest ? ' · 行情时间 ' + latest : '')
+      + ' · 来源 web.ifzq.gtimg.cn';
+  }
+}
+function renderRebalance(){
+  const box = document.getElementById('rebalanceBox');
+  const d = derive();
+  if(!(d.total > 0)){
+    box.innerHTML = '<div class="small-muted">录入持仓和价格后，这里给出建议。</div>';
+    return;
+  }
+  if(!(d.stated > 0)){
+    box.innerHTML = '<div class="small-muted">请先填写目标权重。</div>';
+    return;
+  }
+  const off = Math.abs(d.stated - 100) >= 0.05;
+  const note = off
+    ? '<div class="small warn" style="margin-bottom:8px">目标权重合计 '+d.stated.toFixed(2)+'%。偏离和建议使用归一后的目标，买卖金额互相抵消。</div>'
+    : '';
+  const items = d.rows.map(r => {
+    const curW = Math.max(0, Math.min(100, r.cur));
+    const tgtW = Math.max(0, Math.min(100, r.tgt));
+    const cls = r.alert ? 'warn' : 'flat';
+    const typed = off ? ' · 填写 '+r.target.toFixed(2)+'%' : '';
+    return '<div class="rb-item">'
+      + '<div class="rb-head"><strong>'+esc(r.name)+'</strong><span>'+esc(tradeHint(r.need, r.price))+'</span></div>'
+      + '<div class="wrow"><div class="track"><div class="fill" style="width:'+curW+'%"></div><div class="mark" style="left:'+tgtW+'%"></div></div></div>'
+      + '<div class="small-muted">市值 ¥'+money(r.value)+' · 当前 '+r.cur.toFixed(2)+'% · '+(off?'归一目标':'目标')+' '+r.tgt.toFixed(2)+'%'+typed+' · <span class="'+cls+'">偏离 '+(r.diff>0?'+':'')+r.diff.toFixed(2)+'%</span></div>'
+      + '</div>';
+  }).join('');
+  box.innerHTML = note + '<div class="small-muted">色条是当前权重，白线是目标。</div>' + items;
+}
+function tradeHint(amount, price){
+  if(!Number.isFinite(amount) || Math.abs(amount) < 0.005) return '保持';
+  const side = amount > 0 ? '买入' : '卖出';
+  const abs = Math.abs(amount);
+  if(!Number.isFinite(price) || price <= 0) return side + ' ¥' + money(abs);
+  const shares = abs / price;
+  const hands = Math.floor(shares / 100);
+  const lot = hands > 0 ? '，约 '+hands+' 手（'+(hands*100).toLocaleString('zh-CN')+' 份）' : '，不足 1 手';
+  return side + ' ¥' + money(abs) + lot;
+}
+function renderAll(){
+  renderAssets();
+  syncHoldingSelect();
+  renderPositions();
+  renderOverview();
+  renderRebalance();
+}
+
+function onAssetInput(e){
+  const el = e.target;
+  if(!el.dataset || el.dataset.field !== 'target' || !el.dataset.id) return;
+  const asset = state.assets.find(a => a.id === el.dataset.id);
+  if(!asset) return;
+  asset.target = num(el.value) ?? 0;
+  refreshPositionFigures();
+  updateWeightSum();
+  renderOverview();
+  renderRebalance();
+  saveSoon();
+}
+function onAssetClick(e){
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  if(action === 'cancel-asset'){
+    confirmAssetId = '';
+    renderAssets();
+    return;
+  }
+  if(action === 'del-asset'){
+    confirmAssetId = btn.dataset.id || '';
+    renderAssets();
+    return;
+  }
+  if(action !== 'confirm-asset') return;
+  const asset = state.assets.find(a => a.id === btn.dataset.id);
+  if(!asset){
+    confirmAssetId = '';
+    renderAssets();
+    return;
+  }
+  state.assets = state.assets.filter(a => a.id !== asset.id);
+  state.holdings = state.holdings.filter(h => h.assetId !== asset.id);
+  confirmAssetId = '';
+  saveState();
+  renderAll();
+}
+function findLot(key, lotId){
+  if(String(key).startsWith('in:')){
+    const assetId = key.slice(3);
+    return { kind:'in', assetId, lot: state.holdings.find(h => h.id === lotId && h.assetId === assetId) };
+  }
+  const outsideId = String(key).slice(4);
+  const row = outsideRows().find(r => r.id === outsideId);
+  return { kind:'out', row, lot: row && (row.lots || []).find(l => l.id === lotId) };
+}
+function onLotInput(e){
+  const el = e.target;
+  if(!el.dataset || !el.dataset.lotId) return;
+  const found = findLot(el.dataset.key, el.dataset.lotId);
+  if(!found.lot) return;
+  if(el.dataset.field === 'date'){
+    found.lot.date = el.value || '';
+  }else{
+    const n = num(el.value);
+    if(n == null || n <= 0){
+      if(e.type === 'change') el.value = el.dataset.field === 'unitPrice' ? pxText(found.lot.unitPrice) : String(found.lot.qty);
+      return;
+    }
+    if(el.dataset.field === 'unitPrice'){
+      if(e.type === 'change'){
+        found.lot.unitPrice = sigPrice(n);
+        el.value = pxText(found.lot.unitPrice);
+      }else{
+        found.lot.unitPrice = n;
+      }
+    }else{
+      found.lot.qty = n;
+    }
+  }
+  if(found.kind === 'out' && found.row) syncOutsideRow(found.row);
+  refreshPositionFigures();
+  renderOverview();
+  renderRebalance();
+  saveSoon();
+  if(e.type === 'change') renderPositions();
+}
+function onPositionClick(e){
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const key = btn.dataset.key || '';
+  const id = btn.dataset.id || '';
+  if(action === 'toggle-lots'){
+    openPositionKey = openPositionKey === key ? '' : key;
+    confirmLotId = '';
+    renderPositions();
+    return;
+  }
+  if(action === 'cancel-lot'){
+    confirmLotId = '';
+    renderPositions();
+    return;
+  }
+  if(action === 'ask-lot'){
+    const found = findLot(key, id);
+    if(!found.lot) return;
+    confirmLotId = id;
+    renderPositions();
+    return;
+  }
+  if(action === 'confirm-lot'){
+    const found = findLot(key, id);
+    if(!found.lot){
+      confirmLotId = '';
+      renderPositions();
+      return;
+    }
+    if(found.kind === 'in'){
+      state.holdings = state.holdings.filter(h => h.id !== id);
+      if(!state.holdings.some(h => h.assetId === found.assetId)) openPositionKey = '';
+    }else if(found.row){
+      found.row.lots = found.row.lots.filter(l => l.id !== id);
+      if(!found.row.lots.length){
+        state.outside = outsideRows().filter(r => r.id !== found.row.id);
+        if(openPositionKey === key) openPositionKey = '';
+      }else{
+        syncOutsideRow(found.row);
+      }
+    }
+    confirmLotId = '';
+    saveState();
+    renderPositions();
+    renderOverview();
+    renderRebalance();
+    toast('已删除这一笔');
+  }
+}
+
+async function fetchTimeout(url, ms){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms || 12000);
+  try{
+    return await fetch(url, { signal: ctrl.signal, cache:'no-store' });
+  }finally{
+    clearTimeout(timer);
+  }
+}
+async function mapPool(items, limit, fn){
+  let cursor = 0;
+  async function worker(){
+    while(cursor < items.length){
+      const idx = cursor++;
+      await fn(items[idx], idx);
+    }
+  }
+  const n = Math.max(1, Math.min(limit, items.length));
+  await Promise.all(Array.from({length:n}, () => worker()));
+}
+async function fetchSnapshot(sym){
+  const url = KLINE_URL + encodeURIComponent(sym) + ',day,,,460,qfq';
+  const res = await fetchTimeout(url, 12000);
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  let data;
+  try{ data = await res.json(); }catch(err){ throw new Error('返回格式异常'); }
+  const node = data && data.data && data.data[sym];
+  if(!node) return null;
+  const qtMap = node.qt || {};
+  const qt = qtMap[sym] || Object.values(qtMap)[0] || null;
+  let price = qt ? parseFloat(qt[3]) : NaN;
+  const name = qt ? String(qt[1] || '') : '';
+  let time = qt ? String(qt[30] || '') : '';
+  const prevClose = qt ? parseFloat(qt[4]) : NaN;
+  const changePct = qt ? parseFloat(qt[32]) : NaN;
+  const qfq = Array.isArray(node.qfqday) ? node.qfqday : [];
+  const rawDay = Array.isArray(node.day) ? node.day : [];
+  const hist = qfq.length ? qfq : rawDay;
+  const closes = hist.map(r => [String(r[0]), parseFloat(r[2])]).filter(r => r[0] && r[1] > 0);
+  if(!Number.isFinite(price) || price <= 0){
+    const last = rawDay.length ? rawDay[rawDay.length-1] : (closes.length ? closes[closes.length-1] : null);
+    if(last){
+      price = parseFloat(last[2] != null ? last[2] : last[1]);
+      time = String(last[0] || '').replace(/-/g,'') + '150000';
+    }
+  }
+  return {
+    price, name, time,
+    prevClose: Number.isFinite(prevClose) ? prevClose : null,
+    changePct: Number.isFinite(changePct) ? changePct : null,
+    closes
+  };
+}
+async function refreshOneAsset(asset){
+  const sym = toQqSymbol(asset);
+  try{
+    const snap = await fetchSnapshot(sym);
+    if(!snap || !(snap.price > 0)){
+      asset.priceError = '无行情，请检查代码';
+    }else{
+      asset.price = sigPrice(snap.price);
+      asset.changePct = snap.changePct;
+      asset.priceTime = snap.time;
+      asset.quoteName = snap.name || asset.quoteName;
+      if(snap.name) asset.name = snap.name;
+      asset.priceError = '';
+      asset.closes = snap.closes;
+      const stat = annualVol(asset.closes, state.settings.volWindowDays);
+      asset.vol = stat ? stat.vol : null;
+      asset.volN = stat ? stat.n : 0;
+      asset.histWarn = snap.closes.length < 12 ? '日K不足，波动率暂缺' : '';
+    }
+  }catch(err){
+    console.warn(sym, err);
+    asset.priceError = '拉取失败，请检查网络后重试';
+  }
+}
+async function refreshOneOutside(row){
+  const sym = toQqSymbol(row);
+  if(!sym){
+    row.priceError = '没能取到收盘价，请检查代码';
+    return;
+  }
+  try{
+    const snap = await fetchSnapshot(sym);
+    if(!snap || !(snap.price > 0)){
+      row.priceError = '没能取到收盘价，请检查代码';
+    }else{
+      row.price = sigPrice(snap.price);
+      row.changePct = snap.changePct;
+      row.priceTime = snap.time;
+      if(snap.name) row.name = snap.name;
+      row.priceError = '';
+      row.closes = snap.closes;
+      const stat = annualVol(row.closes, state.settings.volWindowDays);
+      row.vol = stat ? stat.vol : null;
+      row.volN = stat ? stat.n : 0;
+      row.histWarn = snap.closes.length < 12 ? '日K不足，波动率暂缺' : '';
+    }
+  }catch(err){
+    console.warn(sym, err);
+    row.priceError = '没能取到收盘价，请检查网络后重试';
+  }
+}
+async function refreshPrices(opts){
+  opts = opts || {};
+  if(refreshing) return false;
+  const targets = state.assets.filter(a => toQqSymbol(a));
+  const outsideTargets = outsideRows().filter(row => String(row.symbol || '').trim());
+  if(!targets.length && !outsideTargets.length){
+    toast('请先填写证券代码，例如 510300');
+    return false;
+  }
+  refreshing = true;
+  const btn = document.getElementById('refreshPrices');
+  const status = document.getElementById('fetchStatus');
+  btn.disabled = true;
+  const prevText = btn.textContent;
+  btn.textContent = '拉取中…';
+  const jobs = [
+    ...targets.map(asset => ({ kind:'asset', asset })),
+    ...outsideTargets.map(row => ({ kind:'outside', row }))
+  ];
+  let done = 0;
+  status.textContent = '正在获取 0/' + jobs.length + ' …';
+  try{
+    await mapPool(jobs, 4, async (job) => {
+      try{
+        if(job.kind === 'asset') await refreshOneAsset(job.asset);
+        else await refreshOneOutside(job.row);
+      }finally{
+        done++;
+        status.textContent = '正在获取 ' + done + '/' + jobs.length + ' …';
+      }
+    });
+    state.settings.lastFetch = new Date().toISOString();
+    saveState();
+    renderAll();
+    const failedAssets = targets.filter(a => a.priceError);
+    const failedOutside = outsideTargets.filter(row => row.priceError);
+    if(!opts.silent){
+      const notes = failedAssets.map(a => (a.name || a.symbol) + '：' + a.priceError)
+        .concat(failedOutside.map(row => (row.name || row.symbol) + '：' + row.priceError));
+      if(notes.length) toast(notes.join('；'), 'bad');
+      else if(targets.length) toast('已更新价格和历史日K');
+      else toast('已更新收盘价');
+    }
+    return failedAssets.length === 0;
+  }finally{
+    refreshing = false;
+    btn.disabled = false;
+    btn.textContent = prevText;
+  }
+}
+function allocateNew(){
+  const moneyIn = num(document.getElementById('newAmount').value);
+  if(!(moneyIn > 0)){ toast('请输入新资金金额', 'bad'); return; }
+  const d = derive();
+  if(!(d.stated > 0)){ toast('请先填写目标权重', 'bad'); return; }
+  const mode = document.getElementById('allocMode').value;
+  let amounts;
+  if(mode === 'prop' || !(d.total > 0)){
+    amounts = d.rows.map(r => moneyIn * (r.target / d.stated));
+  }else{
+    const future = d.total + moneyIn;
+    const gaps = d.rows.map(r => (r.target / d.stated) * future - r.value);
+    const pos = gaps.map(g => Math.max(0, g));
+    const posSum = pos.reduce((s,g)=>s+g,0);
+    if(posSum <= moneyIn + 1e-6){
+      const rest = moneyIn - posSum;
+      amounts = gaps.map((g,i) => Math.max(0, g) + rest * (d.rows[i].target / d.stated));
+    }else{
+      amounts = pos.map(g => moneyIn * (g / posSum));
+    }
+  }
+  let html = '<div class="table-wrap"><table class="table"><tr><th>资产</th><th>目标</th><th>分配金额</th><th>参考整手</th><th>参考价格</th></tr>';
+  d.rows.forEach((r,i) => {
+    const amt = amounts[i] || 0;
+    let lot = '—';
+    if(r.price > 0 && amt > 0){
+      const hands = Math.floor(amt / r.price / 100);
+      lot = hands > 0 ? hands + ' 手 / ' + (hands*100).toLocaleString('zh-CN') + ' 份 / ¥' + money(hands*100*r.price) : '不足 1 手';
+    }
+    html += '<tr><td>'+esc(r.name)+'</td><td class="mono">'+r.target.toFixed(2)+'%</td><td class="mono">¥'+money(amt)+'</td><td>'+esc(lot)+'</td><td class="mono">'+(r.price>0?pxText(r.price):'—')+'</td></tr>';
+  });
+  html += '</table></div>';
+  document.getElementById('allocResult').innerHTML = html;
+}
+function addPosition(){
+  const chosen = document.getElementById('holdAsset').value;
+  const qty = num(document.getElementById('holdQty').value);
+  const rawPx = num(document.getElementById('holdPrice').value);
+  const unitPrice = rawPx != null ? sigPrice(rawPx) : null;
+  if(!(qty > 0) || !(unitPrice > 0)){ toast('请填写大于 0 的数量和成本价', 'bad'); return; }
+  const date = document.getElementById('holdDate').value || todayStr();
+  let mergedIn = false;
+  if(chosen && chosen !== 'other'){
+    if(!state.assets.some(a => a.id === chosen)){ toast('请选择资产', 'bad'); return; }
+    state.holdings.push({ id:idGen(), assetId:chosen, qty, unitPrice, date, note:'' });
+    openPositionKey = 'in:' + chosen;
+  }else{
+    const symbol = document.getElementById('holdSymbol').value.trim();
+    if(!symbol){ toast('选「其他」时请填写代码', 'bad'); return; }
+    if(!toQqSymbol({ symbol })){ toast('这个代码无法识别', 'bad'); return; }
+    const key = symbolKey(symbol);
+    const asset = state.assets.find(a => symbolKey(a.symbol) && symbolKey(a.symbol) === key);
+    if(asset){
+      state.holdings.push({ id:idGen(), assetId:asset.id, qty, unitPrice, date, note:'' });
+      openPositionKey = 'in:' + asset.id;
+      mergedIn = true;
+    }else{
+      let row = outsideRows().find(r => symbolKey(r.symbol) === key);
+      const lot = { id:idGen(), qty, unitPrice, date };
+      if(!row){
+        row = { id:idGen(), symbol, market:'auto', qty, cost:unitPrice, name:'', price:null, priceError:'', lots:[lot] };
+        outsideRows().push(row);
+      }else{
+        if(!Array.isArray(row.lots)) row.lots = [];
+        row.lots.push(lot);
+        syncOutsideRow(row);
+      }
+      openPositionKey = 'out:' + row.id;
+    }
+    document.getElementById('holdSymbol').value = '';
+  }
+  document.getElementById('holdQty').value = '';
+  document.getElementById('holdPrice').value = '';
+  saveState();
+  renderPositions();
+  renderOverview();
+  renderRebalance();
+  toast(mergedIn ? '这个代码在初始配比里，已记到该资产' : '已添加持仓');
+}
+function exportData(){
+  roundStoredPrices();
+  const data = JSON.parse(JSON.stringify(state));
+  (data.assets || []).forEach(a => { delete a.closes; });
+  (data.outside || []).forEach(row => { delete row.closes; });
+  return data;
+}
+function exportConfig(){
+  const blob = new Blob([JSON.stringify(exportData(), null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'rp_alloc_' + todayStr() + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function importConfig(){
+  const inp = document.createElement('input');
+  inp.type = 'file';
+  inp.accept = 'application/json';
+  inp.onchange = () => {
+    const f = inp.files && inp.files[0];
+    if(!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const j = JSON.parse(String(reader.result || ''));
+        if(!j || !Array.isArray(j.assets)) throw new Error('bad');
+        state = normalizeState(j);
+        saveState();
+        fillControls();
+        renderAll();
+        toast('导入成功');
+      }catch(err){
+        toast('导入失败，请选择本工具导出的 JSON', 'bad');
+      }
+    };
+    reader.readAsText(f);
+  };
+  inp.click();
+}
+function fillControls(){
+  document.getElementById('threshold').value = state.settings.threshold;
+  document.getElementById('volWindow').value = String(state.settings.volWindowDays);
+  if(!document.getElementById('holdDate').value) document.getElementById('holdDate').value = todayStr();
+}
+async function addAsset(){
+  const symbol = document.getElementById('assetSymbol').value.trim();
+  const target = num(document.getElementById('assetTarget').value);
+  if(!symbol){ toast('请填写代码', 'bad'); return; }
+  if(target == null || target < 0){ toast('请填写目标比例', 'bad'); return; }
+  if(!toQqSymbol({ symbol })){ toast('这个代码无法识别', 'bad'); return; }
+  const key = symbolKey(symbol);
+  if(state.assets.some(a => symbolKey(a.symbol) === key)){ toast('这个代码已经在列表里', 'bad'); return; }
+  const asset = blankAsset({ symbol, target, market:'auto' });
+  const btn = document.getElementById('addAssetBtn');
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = '拉取中…';
+  try{
+    await refreshOneAsset(asset);
+    state.assets.push(asset);
+    document.getElementById('assetSymbol').value = '';
+    document.getElementById('assetTarget').value = '';
+    saveState();
+    renderAll();
+    if(asset.priceError) toast(asset.symbol + '：' + asset.priceError, 'bad');
+    else toast('已添加 ' + (asset.name || asset.symbol) + '，价格 ¥' + pxText(asset.price));
+  }finally{
+    btn.disabled = false;
+    btn.textContent = prev;
+  }
+}
+
+document.getElementById('assetsBody').addEventListener('input', onAssetInput);
+document.getElementById('assetsBody').addEventListener('change', onAssetInput);
+document.getElementById('assetsBody').addEventListener('click', onAssetClick);
+document.getElementById('positionBox').addEventListener('input', onLotInput);
+document.getElementById('positionBox').addEventListener('change', onLotInput);
+document.getElementById('positionBox').addEventListener('click', onPositionClick);
+document.getElementById('holdAsset').addEventListener('change', syncHoldExtra);
+document.getElementById('addAssetBtn').addEventListener('click', addAsset);
+document.getElementById('assetSymbol').addEventListener('keydown', e => { if(e.key === 'Enter') addAsset(); });
+document.getElementById('assetTarget').addEventListener('keydown', e => { if(e.key === 'Enter') addAsset(); });
+document.getElementById('refreshPrices').addEventListener('click', () => { refreshPrices(); });
+document.getElementById('exportBtn').addEventListener('click', exportConfig);
+document.getElementById('importBtn').addEventListener('click', importConfig);
+document.getElementById('addHoldingBtn').addEventListener('click', addPosition);
+document.getElementById('allocBtn').addEventListener('click', allocateNew);
+document.getElementById('newAmount').addEventListener('keydown', e => { if(e.key === 'Enter') allocateNew(); });
+document.getElementById('threshold').addEventListener('input', () => {
+  const n = num(document.getElementById('threshold').value);
+  if(n != null && n >= 0) state.settings.threshold = n;
+  renderOverview();
+  renderRebalance();
+  saveSoon();
+});
+document.getElementById('volWindow').addEventListener('change', () => {
+  state.settings.volWindowDays = +document.getElementById('volWindow').value || 63;
+  state.assets.forEach(a => {
+    const stat = annualVol(a.closes, state.settings.volWindowDays);
+    a.vol = stat ? stat.vol : null;
+    a.volN = stat ? stat.n : 0;
+  });
+  outsideRows().forEach(row => {
+    const stat = annualVol(row.closes, state.settings.volWindowDays);
+    row.vol = stat ? stat.vol : null;
+    row.volN = stat ? stat.n : 0;
+    if((row.closes || []).length) row.histWarn = row.closes.length < 12 ? '日K不足，波动率暂缺' : '';
+  });
+  saveState();
+  renderAll();
+});
+
+loadState();
+fillControls();
+renderAll();
+showTab(sessionStorage.getItem('rp_tab') || 'setup');
+if(!localStorage.getItem(STORAGE_KEY)) saveState();
+
+function showTab(id){
+  const known = ['setup','status','rebalance','cash'];
+  if(!known.includes(id)) id = 'setup';
+  document.querySelectorAll('.panel').forEach(panel => { panel.hidden = panel.dataset.panel !== id; });
+  document.querySelectorAll('.tab').forEach(tab => { tab.classList.toggle('on', tab.dataset.tab === id); });
+  try{ sessionStorage.setItem('rp_tab', id); }catch(err){}
+}
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if(tab) showTab(tab.dataset.tab);
+});
+</script>
+</body>
+</html>
